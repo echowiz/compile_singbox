@@ -34,17 +34,17 @@ jobs:
           PREVIOUS_PROXY_CONTENT=$(cat previous_proxy.txt || echo "")
           CURRENT_DIRECT_CONTENT="${{ steps.download_files.outputs.direct_content }}"
           CURRENT_PROXY_CONTENT="${{ steps.download_files.outputs.proxy_content }}"
-        
-          if [[ "$(echo "$PREVIOUS_DIRECT_CONTENT" | base64 -d)" != "$(echo "$CURRENT_DIRECT_CONTENT" | base64 -d)" || "$(echo "$PREVIOUS_PROXY_CONTENT" | base64 -d)" != "$(echo "$CURRENT_PROXY_CONTENT" | base64 -d)" ]]; then
-            echo "files_changed=true"  >> $GITHUB_OUTPUT
+
+          if [[ "$(echo -n "$PREVIOUS_DIRECT_CONTENT" | base64 -d)" != "$(echo -n "$CURRENT_DIRECT_CONTENT" | base64 -d)" || "$(echo -n "$PREVIOUS_PROXY_CONTENT" | base64 -d)" != "$(echo -n "$CURRENT_PROXY_CONTENT" | base64 -d)" ]]; then
+             echo "files_changed=true" >> $GITHUB_OUTPUT
           else
             echo "files_changed=false" >> $GITHUB_OUTPUT
             echo "No changes detected, skipping compilation."
           fi
-          
+
           echo "${CURRENT_DIRECT_CONTENT}" > previous_direct.txt
           echo "${CURRENT_PROXY_CONTENT}" > previous_proxy.txt
-      
+
       - name: Download latest sing-box
         if: steps.check_changes.outputs.files_changed == 'true'
         run: |
