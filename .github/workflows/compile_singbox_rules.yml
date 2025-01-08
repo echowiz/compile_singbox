@@ -65,8 +65,18 @@ jobs:
             exit 1
           fi
           
-          tar -xzf sing-box.tar.gz --strip-components=1 '*/sing-box'
+          # 解压并列出文件内容
+          echo "Extracting archive..."
+          tar -tvf sing-box.tar.gz
+          
+          # 解压所有文件
+          tar -xzf sing-box.tar.gz
+          
+          # 查找并移动 sing-box 可执行文件
+          find . -name "sing-box" -type f -exec mv {} . \;
           chmod +x sing-box
+          
+          # 清理
           rm sing-box.tar.gz
 
       - name: Compile rule-set
