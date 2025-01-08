@@ -49,8 +49,9 @@ jobs:
         if: steps.check_changes.outputs.files_changed == 'true'
         run: |
           LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | jq -r ".assets[] | select(.name | contains(\"sing-box-linux-amd64\")) | .browser_download_url")
-          curl -LO "$LATEST_RELEASE_URL"
-          tar -zxvf sing-box-linux-amd64*.tar.gz
+          FILE_NAME=$(basename "$LATEST_RELEASE_URL")
+          curl -L -o "$FILE_NAME" "$LATEST_RELEASE_URL"
+          tar -zxvf "$FILE_NAME"
           chmod +x sing-box
 
       - name: Compile rule-set
