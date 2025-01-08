@@ -21,8 +21,8 @@ jobs:
           DIRECT_CONTENT=$(curl -s "$DIRECT_URL")
           PROXY_CONTENT=$(curl -s "$PROXY_URL")
           
-          echo "direct_content=$(echo "$DIRECT_CONTENT" | base64)" >> "$GITHUB_OUTPUT"
-          echo "proxy_content=$(echo "$PROXY_CONTENT" | base64)" >> "$GITHUB_OUTPUT"
+          echo "direct_content=$(echo "$DIRECT_CONTENT" | base64 -w 0)" >> "$GITHUB_OUTPUT"
+          echo "proxy_content=$(echo "$PROXY_CONTENT" | base64 -w 0)" >> "$GITHUB_OUTPUT"
           
           echo "$DIRECT_CONTENT" > direct.json
           echo "$PROXY_CONTENT" > proxy.json
@@ -42,8 +42,8 @@ jobs:
             echo "No changes detected, skipping compilation."
           fi
 
-          echo "${CURRENT_DIRECT_CONTENT}" > previous_direct.txt
-          echo "${CURRENT_PROXY_CONTENT}" > previous_proxy.txt
+          echo "${CURRENT_DIRECT_CONTENT}" | base64 -d > previous_direct.txt
+          echo "${CURRENT_PROXY_CONTENT}" | base64 -d > previous_proxy.txt
 
       - name: Download latest sing-box
         if: steps.check_changes.outputs.files_changed == 'true'
