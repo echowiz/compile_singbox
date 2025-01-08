@@ -1,0 +1,94 @@
+name: Compile and Release Sing-box Rules
+
+on:
+  schedule:
+    - cron: '0 * * * *' # 每小时触发一次
+  workflow_dispatch: # 手动触发
+
+jobs:
+  compile_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download JSON files
+        id: download_files
+        run: |
+          DIRECT_URL="https://gist.githubusercontent.com/echowiz/f51837ac7525a75383c48275b9f4f692/raw/direct.json"
+          PROXY_URL="https://gist.githubusercontent.com/echowiz/f51837ac7525a75383c48275b9f4f692/raw/proxy.json"
+          
+          DIRECT_CONTENT=$(curl -s "$DIRECT_URL")
+          PROXY_CONTENT=$(curl -s "$PROXY_URL")
+          
+          echo "direct_content=$(echo "$DIRECT_CONTENT" | base64)" >> "$GITHUB_OUTPUT"
+          echo "proxy_content=$(echo "$PROXY_CONTENT" | base64)" >> "$GITHUB_OUTPUT"
+          
+          echo "$DIRECT_CONTENT" > direct.json
+          echo "$PROXY_CONTENT" > proxy.json
+          
+      - name: Check for file changes
+        id: check_changes
+        run: |
+          PREVIOUS_DIRECT_CONTENT=$(cat previous_direct.txt || echo "")
+          PREVIOUS_PROXY_CONTENT=$(cat previous_proxy.txt || echo "")   
+          CURRENT_DIRECT_CONTENT="${{ steps.download_files.outputs.direct_content }}"
+          CURRENT_PROXY_CONTENT="${{ steps.download_files.outputs.proxy_content }}"
+          
+          if [[ "$PREVIOUS_DIRECT_CONTENT" != "$CURRENT_DIRECT_CONTENT" || "$PREVIOUS_PROXY_CONTENT" != "$CURRENT_PROXY_CONTENT" ]]; then
+            echo "files_changed=true"  >> $GITHUB_OUTPUT
+          else
+            echo "files_changed=false"  >> $GITHUB_OUTPUT
+            echo "No changes detected, skipping compilation."
+          fi
+
+          echo "${CURRENT_DIRECT_CONTENT}" | base64 -d > previous_direct.txt
+          echo "${CURRENT_PROXY_CONTENT}" | base64 -d > previous_proxy.txt
+      
+      - name: Download latest sing-box
+        if: steps.check_changes.outputs.files_changed == 'true'
+        run: |
+          LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | jq -r ".assets[] | select(.name | contains(\"sing-box-linux-amd64\")) | .browser_download_url")
+          curl -LO "$LATEST_RELEASE_URL"
+          tar -zxvf sing-box-linux-amd64*.tar.gz
+          chmod +x sing-box
+
+      - name: Compile rule-set
+        if: steps.check_changes.outputs.files_changed == 'true'
+        run: |
+          ./sing-box rule-set compile --output direct.srs direct.json
+          ./sing-box rule-set compile --output proxy.srs proxy.json
+
+      - name: Create Release
+        if: steps.check_changes.outputs.files_changed == 'true'
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.run_id }}
+          release_name: Release ${{ github.run_id }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Assets
+        if: steps.check_changes.outputs.files_changed == 'true'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: direct.srs
+          asset_name: direct.srs
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Assets
+        if: steps.check_changes.outputs.files_changed == 'true'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+           upload_url: ${{ steps.create_release.outputs.upload_url }}
+           asset_path: proxy.srs
+           asset_name: proxy.srs
+           asset_content_type: application/octet-stream
