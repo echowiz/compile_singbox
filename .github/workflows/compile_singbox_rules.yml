@@ -48,10 +48,14 @@ jobs:
       - name: Download latest sing-box
         if: steps.check_changes.outputs.files_changed == 'true'
         run: |
-          LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | jq -r ".assets[] | select(.name | contains(\"sing-box-linux-amd64\")) | .browser_download_url")
-          FILE_NAME=$(basename "$LATEST_RELEASE_URL")
-          curl -L -o "$FILE_NAME" "$LATEST_RELEASE_URL"
-          tar -zxvf "$FILE_NAME"
+          LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | jq -r '.assets[] | select(.name | test("linux-amd64.tar.gz$")) | .browser_download_url')
+          if [ -z "$LATEST_RELEASE_URL" ]; then
+            echo "Failed to get download URL"
+            exit 1
+          fi
+          echo "Downloading from: $LATEST_RELEASE_URL"
+          wget -O sing-box.tar.gz "$LATEST_RELEASE_URL"
+          tar -zxvf sing-box.tar.gz --strip-components=1 '*/sing-box'
           chmod +x sing-box
 
       - name: Compile rule-set
