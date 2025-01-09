@@ -96,36 +96,52 @@ jobs:
           ./sing-box rule-set compile --output direct.srs direct.json
           ./sing-box rule-set compile --output proxy.srs proxy.json
 
+      - name: Update Gist
+        if: steps.check_changes.outputs.files_changed == 'true'
+        run: |
+          GIST_ID="f51837ac7525a75383c48275b9f4f692"
+          
+          # 读取JSON文件内容
+          DIRECT_JSON=$(cat direct.json)
+          PROXY_JSON=$(cat proxy.json)
+          
+          # 准备更新数据 (只包含JSON文件)
+          JSON_DATA=$(cat <<EOF
+          {
+            "files": {
+              "direct.json": {
+                "content": $DIRECT_JSON
+              },
+              "proxy.json": {
+                "content": $PROXY_JSON
+              }
+            }
+          }
+          EOF
+          )
+          
+          # 更新Gist
+          curl -L \
+            -X PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GIST_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/gists/$GIST_ID" \
+            -d "$JSON_DATA"
+
       - name: Create Release
         if: steps.check_changes.outputs.files_changed == 'true'
         id: create_release
-        uses: actions/create-release@v1
+        run: |
+          # 删除已存在的tag和release
+          git tag -d latest || true
+          git push origin :refs/tags/latest || true
+          
+          # 创建新release
+          gh release delete latest --yes || true
+          gh release create latest \
+            --title "Latest Rules" \
+            --notes "Auto-updated rules" \
+            direct.srs proxy.srs
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}  # 改用自定义 token
-        with:
-          tag_name: ${{ github.run_id }}
-          release_name: Release ${{ github.run_id }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Assets
-        if: steps.check_changes.outputs.files_changed == 'true'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}  # 这里也需要改
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: direct.srs
-          asset_name: direct.srs
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Assets
-        if: steps.check_changes.outputs.files_changed == 'true'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}  # 这里也需要改
-        with:
-           upload_url: ${{ steps.create_release.outputs.upload_url }}
-           asset_path: proxy.srs
-           asset_name: proxy.srs
-           asset_content_type: application/octet-stream
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
