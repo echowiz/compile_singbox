@@ -90,7 +90,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}  # 改用自定义 token
         with:
           tag_name: ${{ github.run_id }}
           release_name: Release ${{ github.run_id }}
@@ -101,7 +101,7 @@ jobs:
         if: steps.check_changes.outputs.files_changed == 'true'
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}  # 这里也需要改
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: direct.srs
@@ -112,7 +112,7 @@ jobs:
         if: steps.check_changes.outputs.files_changed == 'true'
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}  # 这里也需要改
         with:
            upload_url: ${{ steps.create_release.outputs.upload_url }}
            asset_path: proxy.srs
