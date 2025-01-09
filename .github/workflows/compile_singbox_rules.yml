@@ -12,20 +12,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download JSON files
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Download list files and convert
         id: download_files
         run: |
-          DIRECT_URL="https://gist.githubusercontent.com/echowiz/f51837ac7525a75383c48275b9f4f692/raw/direct.json"
-          PROXY_URL="https://gist.githubusercontent.com/echowiz/f51837ac7525a75383c48275b9f4f692/raw/proxy.json"
+          DIRECT_URL="https://gist.githubusercontent.com/echowiz/f51837ac7525a75383c48275b9f4f692/raw/direct.list"
+          PROXY_URL="https://gist.githubusercontent.com/echowiz/f51837ac7525a75383c48275b9f4f692/raw/proxy.list"
           
-          DIRECT_CONTENT=$(curl -s "$DIRECT_URL")
-          PROXY_CONTENT=$(curl -s "$PROXY_URL")
+          # 下载 list 文件
+          curl -s "$DIRECT_URL" -o direct.list
+          curl -s "$PROXY_URL" -o proxy.list
           
-          echo "direct_content=$(echo "$DIRECT_CONTENT" | base64 -w 0)" >> "$GITHUB_OUTPUT"
-          echo "proxy_content=$(echo "$PROXY_CONTENT" | base64 -w 0)" >> "$GITHUB_OUTPUT"
+          # 转换为 JSON
+          python txt2json.py direct.list direct.json
+          python txt2json.py proxy.list proxy.json
           
-          echo "$DIRECT_CONTENT" > direct.json
-          echo "$PROXY_CONTENT" > proxy.json
+          # 生成校验内容
+          DIRECT_CONTENT=$(cat direct.json | base64 -w 0)
+          PROXY_CONTENT=$(cat proxy.json | base64 -w 0)
+          
+          echo "direct_content=$DIRECT_CONTENT" >> "$GITHUB_OUTPUT"
+          echo "proxy_content=$PROXY_CONTENT" >> "$GITHUB_OUTPUT"
 
       - name: Check for file changes
         id: check_changes
