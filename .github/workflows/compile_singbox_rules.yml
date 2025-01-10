@@ -101,19 +101,19 @@ jobs:
         run: |
           GIST_ID="f51837ac7525a75383c48275b9f4f692"
           
-          # 读取JSON文件内容
-          DIRECT_JSON=$(cat direct.json)
-          PROXY_JSON=$(cat proxy.json)
+          # 将 JSON 文件内容转换为转义字符串
+          DIRECT_JSON=$(cat direct.json | jq -c . | jq -R .)
+          PROXY_JSON=$(cat proxy.json | jq -c . | jq -R .)
           
-          # 准备更新数据 (只包含JSON文件)
+          # 准备更新数据
           JSON_DATA=$(cat <<EOF
           {
             "files": {
               "direct.json": {
-                "content": $DIRECT_JSON
+                "content": ${DIRECT_JSON}
               },
               "proxy.json": {
-                "content": $PROXY_JSON
+                "content": ${PROXY_JSON}
               }
             }
           }
@@ -124,7 +124,7 @@ jobs:
           curl -L \
             -X PATCH \
             -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GIST_TOKEN }}" \
+            -H "Authorization: Bearer \${{ secrets.GIST_TOKEN }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/gists/$GIST_ID" \
             -d "$JSON_DATA"
