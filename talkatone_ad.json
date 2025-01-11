@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "domain": [],
+      "domain_suffix": [
+        "ads.inmobi.com",
+        "tappx.com",
+        "criteo.com",
+        "pubmatic.com",
+        "smaato.net",
+        "amazon-adsystem.com",
+         "adsappier.com",
+        "appier.net",
+        "appiersig.com"
+      ],
+      "domain_keyword": [
+        "googleads"
+      ],
+      "domain_regex": [],
+      "source_ip_cidr": [],
+      "ip_cidr": []
+    }
+  ]
+}
